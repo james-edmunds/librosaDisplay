@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Librosa Audio Feature Analyzer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%);
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #00ff88, #45b7d1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .file-selector {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        select {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            color: white;
+            padding: 10px 15px;
+            font-size: 16px;
+            min-width: 200px;
+        }
+
+        select option {
+            background: #2d2d2d;
+            color: white;
+        }
+
+        .analyze-btn {
+            background: linear-gradient(45deg, #00ff88, #45b7d1);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .analyze-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .audio-player {
+            margin-top: 15px;
+        }
+
+        .audio-player audio {
+            width: 100%;
+            border-radius: 8px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+            color: #45b7d1;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid #00ff88;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .visualization {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .visualization h3 {
+            margin-bottom: 15px;
+            color: #00ff88;
+            font-size: 1.3em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .visualization img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .info-panel {
+            background: rgba(0, 255, 136, 0.1);
+            border-left: 4px solid #00ff88;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .tempo-info {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .error {
+            background: rgba(255, 107, 107, 0.1);
+            border-left: 4px solid #ff6b6b;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .results {
+                grid-template-columns: 1fr;
+            }
+            
+            .file-selector {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            select, .analyze-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎵 Librosa Audio Feature Analyzer</h1>
+            <p>Analyze and visualize audio features using librosa</p>
+        </div>
+
+        <div class="controls">
+            <div class="file-selector">
+                <label for="fileSelect">Select Audio File:</label>
+                <select id="fileSelect">
+                    <option value="">Choose an MP3 file...</option>
+                </select>
+                <button class="analyze-btn" id="analyzeBtn" disabled>Analyze Audio</button>
+            </div>
+            
+            <div class="audio-player" id="audioPlayer" style="display: none;">
+                <audio controls id="audioElement">
+                    Your browser does not support the audio element.
+                </audio>
+            </div>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Analyzing audio features... This may take a moment.</p>
+        </div>
+
+        <div id="results" class="results"></div>
+    </div>
+
+    <script>
+        let currentFile = '';
+
+        // Load available files on page load
+        async function loadFiles() {
+            try {
+                const response = await fetch('/api/files');
+                const files = await response.json();
+                
+                const select = document.getElementById('fileSelect');
+                select.innerHTML = '<option value="">Choose an MP3 file...</option>';
+                
+                files.forEach(file => {
+                    const option = document.createElement('option');
+                    option.value = file;
+                    option.textContent = file;
+                    select.appendChild(option);
+                });
+                
+                if (files.length === 0) {
+                    select.innerHTML = '<option value="">No MP3 files found in /data/audio</option>';
+                }
+            } catch (error) {
+                console.error('Error loading files:', error);
+                document.getElementById('results').innerHTML = 
+                    '<div class="error">Error loading files. Make sure the server is running and /data/audio contains MP3 files.</div>';
+            }
+        }
+
+        // Handle file selection
+        document.getElementById('fileSelect').addEventListener('change', function(e) {
+            const filename = e.target.value;
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const audioPlayer = document.getElementById('audioPlayer');
+            const audioElement = document.getElementById('audioElement');
+            
+            if (filename) {
+                analyzeBtn.disabled = false;
+                currentFile = filename;
+                
+                // Set up audio player
+                audioElement.src = `/data/audio/${filename}`;
+                audioPlayer.style.display = 'block';
+            } else {
+                analyzeBtn.disabled = true;
+                audioPlayer.style.display = 'none';
+                currentFile = '';
+            }
+        });
+
+        // Handle analyze button click
+        document.getElementById('analyzeBtn').addEventListener('click', analyzeAudio);
+
+        async function analyzeAudio() {
+            if (!currentFile) return;
+            
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            
+            loading.style.display = 'block';
+            results.innerHTML = '';
+            
+            try {
+                const response = await fetch(`/api/analyze/${currentFile}`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                displayResults(data);
+            } catch (error) {
+                console.error('Error analyzing audio:', error);
+                results.innerHTML = `<div class="error">Error analyzing audio: ${error.message}</div>`;
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        function displayResults(data) {
+            const results = document.getElementById('results');
+            
+            let html = `
+                <div class="info-panel">
+                    <h3>📊 Analysis Results for: ${data.filename}</h3>
+                    <div class="tempo-info">🎵 Detected Tempo: ${data.tempo.toFixed(1)} BPM</div>
+                </div>
+            `;
+            
+            const visualizationTitles = {
+                'waveform': '🌊 Waveform',
+                'spectrogram': '📈 Spectrogram',
+                'mel_spectrogram': '🔥 Mel-frequency Spectrogram',
+                'mfcc': '🎯 MFCCs (Mel-frequency Cepstral Coefficients)',
+                'chroma': '🌈 Chromagram',
+                'spectral_features': '⚡ Spectral Features',
+                'tempo_beats': '🥁 Beat Tracking',
+                'advanced_spectral': '🔬 Advanced Spectral Features',
+                'onset_strength': '💥 Onset Strength & Detection',
+                'harmonic_percussive': '🎵 Harmonic vs Percussive Separation',
+                'mfcc_deltas': '📊 MFCC Deltas (Derivatives)',
+                'chroma_comparison': '🎼 Chroma Comparison (STFT vs CQT)',
+                'tonnetz': '🕸️ Tonnetz (Harmonic Network)',
+                'poly_features': '📈 Polynomial Features'
+            };
+            
+            Object.entries(data.visualizations).forEach(([key, value]) => {
+                if (typeof value === 'string' && !value.startsWith('Error')) {
+                    html += `
+                        <div class="visualization">
+                            <h3>${visualizationTitles[key] || key}</h3>
+                            <img src="data:image/png;base64,${value}" alt="${key}">
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div class="visualization">
+                            <h3>${visualizationTitles[key] || key}</h3>
+                            <div class="error">${value}</div>
+                        </div>
+                    `;
+                }
+            });
+            
+            results.innerHTML = html;
+        }
+
+        // Load files when page loads
+        loadFiles();
+    </script>
+</body>
+</html>
