@@ -1,0 +1,60 @@
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Audio files (keep structure but ignore content)
+data/audio/*.mp3
+data/audio/*.wav
+data/audio/*.flac
+data/audio/*.m4a
+data/audio/*.aac
+data/audio/*.ogg
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Flask
+instance/
+.webassets-cache
+
+# PyCharm
+#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
+#  be added to the global gitignore or merged into this file.  For a more nuclear
+#  option (not recommended) you can uncomment the following to ignore the entire idea folder.
+#.idea/
