@@ -10,6 +10,7 @@ import io
 import base64
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 import json
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
@@ -298,7 +299,16 @@ def get_files():
 
 @app.route('/api/analyze/<filename>')
 def analyze_file(filename):
-    file_path = os.path.join(AUDIO_FOLDER, filename)
+    # Security: Sanitize filename to prevent path traversal
+    safe_filename = secure_filename(filename)
+    if not safe_filename or safe_filename != filename:
+        return jsonify({'error': 'Invalid filename'}), 400
+
+    file_path = os.path.join(AUDIO_FOLDER, safe_filename)
+    # Additional security: Ensure the resolved path is within AUDIO_FOLDER
+    if not os.path.abspath(file_path).startswith(os.path.abspath(AUDIO_FOLDER)):
+        return jsonify({'error': 'Access denied'}), 403
+
     if not os.path.exists(file_path):
         return jsonify({'error': 'File not found'}), 404
     
@@ -326,7 +336,20 @@ def analyze_file(filename):
 
 @app.route('/data/audio/<filename>')
 def serve_audio(filename):
-    return send_file(os.path.join(AUDIO_FOLDER, filename))
+    # Security: Sanitize filename to prevent path traversal
+    safe_filename = secure_filename(filename)
+    if not safe_filename or safe_filename != filename:
+        return jsonify({'error': 'Invalid filename'}), 400
+
+    file_path = os.path.join(AUDIO_FOLDER, safe_filename)
+    # Additional security: Ensure the resolved path is within AUDIO_FOLDER
+    if not os.path.abspath(file_path).startswith(os.path.abspath(AUDIO_FOLDER)):
+        return jsonify({'error': 'Access denied'}), 403
+
+    if not os.path.exists(file_path):
+        return jsonify({'error': 'File not found'}), 404
+
+    return send_file(file_path)
 
 if __name__ == '__main__':
     # Create audio directory if it doesn't exist
