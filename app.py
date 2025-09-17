@@ -19,10 +19,11 @@ PLOT_STYLE = 'dark_background'
 plt.style.use(PLOT_STYLE)
 
 def get_audio_files():
-    """Get list of MP3 files in the audio directory"""
+    """Get list of audio files in the audio directory"""
     if not os.path.exists(AUDIO_FOLDER):
         return []
-    return [f for f in os.listdir(AUDIO_FOLDER) if f.endswith('.mp3')]
+    audio_extensions = ('.mp3', '.wav', '.flac', '.m4a', '.aac', '.ogg')
+    return [f for f in os.listdir(AUDIO_FOLDER) if f.lower().endswith(audio_extensions)]
 
 def extract_all_features(file_path):
     """Extract comprehensive librosa features from audio file"""

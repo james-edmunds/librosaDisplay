@@ -197,7 +197,7 @@
             <div class="file-selector">
                 <label for="fileSelect">Select Audio File:</label>
                 <select id="fileSelect">
-                    <option value="">Choose an MP3 file...</option>
+                    <option value="">Choose an audio file...</option>
                 </select>
                 <button class="analyze-btn" id="analyzeBtn" disabled>Analyze Audio</button>
             </div>
@@ -237,7 +237,7 @@
                 });
                 
                 if (files.length === 0) {
-                    select.innerHTML = '<option value="">No MP3 files found in /data/audio</option>';
+                    select.innerHTML = '<option value="">No audio files found in /data/audio</option>';
                 }
             } catch (error) {
                 console.error('Error loading files:', error);
